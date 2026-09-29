@@ -1,0 +1,6 @@
+.env
+NOTES
+DEBUG_FILE.py
+.venv/
+.idea/
+__pycache__
