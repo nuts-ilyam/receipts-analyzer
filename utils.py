@@ -8,16 +8,60 @@ from config import db_session
 from db.models import Receipts, ReceiptItem
 from parser import LentaParser, MagnitParser
 
+WASTE_SUBSTR_MAPPER = {
+    "; шт.": "",
+    "; кг.": "",
+    "; кг": "",
+    "вес": "",
+    "пл/ст":"",
+    "п/уп":"",
+    "пэт":"",
+    "уп":""
+}
 
-def normalize_text(value: str) -> str:
-    mapping = {"ё" : "е",
-              ";": ""}
+STANDARD_MEASURES_MAPPER = {"l": "л", "ml": "мл", "g": "г", "kg": "кг",
+                            }
+
+
+def replace_substrings(text: str, mapper: dict):
+    # Create a regex pattern from the dictionary keys
+    pattern = re.compile("|".join(map(re.escape, mapper.keys())))
+
+    # Replace matches using a lambda function lookup
+    return pattern.sub(lambda match: mapper[match.group(0)], text)
+
+
+def reorder_product_measures(product_name: str):
+    pattern = r"\d+(?:[.,]\d+)?\s*(?:кг|г|kg|g|l|ml|л|мл|%)\s*"
+    extracted_weights = []
+
+    def extract_and_replace(match):
+        # 1. Extract the found text and save it
+        found_text = match.group(0).replace(" ", "")
+        found_text = replace_substrings(found_text, STANDARD_MEASURES_MAPPER)
+        extracted_weights.append(found_text)
+
+        # 2. Return the replacement string
+        return ""
+
+    # re.sub calls the function for every match it finds
+    modified_text = re.sub(pattern=pattern, repl=extract_and_replace,
+                           string=product_name, flags=re.IGNORECASE)
+    measures = " ".join(extracted_weights)
+    return modified_text + " " + measures
+
+
+
+def normalize_product_name(value: str) -> str:
     value = value.lower()
-    table = str.maketrans(mapping)
 
-    value = value.translate(table)
+    # remove waste characters
+    value = replace_substrings(value,mapper=WASTE_SUBSTR_MAPPER)
 
-    # value = re.sub(r"[^а-яa-z0-9]+", " ", value)
+    # move all measures (kilo, liter, % to the end of string)
+    value = reorder_product_measures(value)
+
+    #remove extra space
     value = re.sub(r"\s+", " ", value)
 
     return value
@@ -57,7 +101,7 @@ def run_email_processing(messages: List[MailMessage]):
                 for product in products:
                     # get product id
                     new_receipt_item = ReceiptItem(
-                        raw_product_name=normalize_text(product.name),
+                        raw_product_name=normalize_product_name(product.name),
                         quantity=product.quantity,
                         price=product.total,
                         receipt_id=new_receipt.id)
