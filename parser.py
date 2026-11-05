@@ -23,15 +23,11 @@ class ParsedReceipt:
 
 
 class Parser:
-    def __init__(self):
-        self.store_name = "Base"
+    def __init__(self, html):
+        self.soup = BeautifulSoup(html, "html.parser")
 
-    @staticmethod
-    def _get_rows(soup: BeautifulSoup) -> list:
-        return soup.find_all("tr")
-
-    def _get_text(self, soup) -> str:
-        return soup.get_text(" ", strip=True)
+    def _get_text(self) -> str:
+        return self.soup.get_text(" ", strip=True)
 
     def _get_store_name(self):
         return "Default Store"
@@ -39,25 +35,23 @@ class Parser:
     def _get_store_address(self):
         return "Default address"
 
-    @staticmethod
-    def _get_receipt_items(soup: BeautifulSoup) -> list[Item]:
+    def _get_receipt_items(self) -> list[Item]:
         pass
 
-    def _get_total(self, soup: BeautifulSoup) -> Decimal:
+    def _get_total(self) -> Decimal:
         pass
 
-    def _get_purchase_datetime(self, soup: BeautifulSoup) -> datetime:
+    def _get_purchase_datetime(self) -> datetime:
         pass
 
-    def get_parsed_receipt(self, html: str):
-        soup = BeautifulSoup(html, "html.parser")
+    def get_parsed_receipt(self):
 
         return ParsedReceipt(
             store=self._get_store_name(),
             address=self._get_store_address(),
-            purchase_datetime=self._get_purchase_datetime(soup),
-            total=self._get_total(soup),
-            items=self._get_receipt_items(soup)
+            purchase_datetime=self._get_purchase_datetime(),
+            total=self._get_total(),
+            items=self._get_receipt_items()
         )
 
 
@@ -66,8 +60,8 @@ class LentaParser(Parser):
     def _get_store_name(self) -> str:
         return "Lenta"
 
-    def _get_purchase_datetime(self, soup: BeautifulSoup) -> datetime:
-        text = self._get_text(soup)
+    def _get_purchase_datetime(self) -> datetime:
+        text = self._get_text()
         match = re.search(
             r"КАССОВЫЙ ЧЕК №:\s*\d+\s+"
             r"(\d{2}\.\d{2}\.\d{2}\s+\d{2}:\d{2})",
@@ -82,18 +76,17 @@ class LentaParser(Parser):
             "%d.%m.%y %H:%M",
         )
 
-    def _get_total(self, soup: BeautifulSoup) -> Decimal:
-        text = self._get_text(soup)
+    def _get_total(self) -> Decimal:
+        text = self._get_text()
         match = re.search(r"ИТОГО: (\d+(?:\.\d+)?)", text)
         if not match:
             return None
         return Decimal(match.group(1))
 
-    @staticmethod
-    def _get_receipt_items(soup: BeautifulSoup) -> list[Item]:
+    def _get_receipt_items(self) -> list[Item]:
         items = []
 
-        for hr in soup.find_all("hr"):
+        for hr in self.soup.find_all("hr"):
             block = hr.find_parent("div")
 
             if not block:
@@ -139,11 +132,11 @@ class MagnitParser(Parser):
     def _get_store_name(self) -> str:
         return "Magnit"
 
-    def _get_purchase_datetime(self, soup: BeautifulSoup) -> datetime | None:
+    def _get_purchase_datetime(self) -> datetime | None:
 
-        rows = self._get_rows(soup)
+        rows = self.soup.find_all("tr")
         for row in rows:
-            text = self._get_text(row)
+            text = row.get_text(" ", strip=True)
 
             try:
                 return datetime.strptime(
@@ -158,20 +151,20 @@ class MagnitParser(Parser):
     def _get_store_address(self):
         return "Magnit address"
 
-    def _get_total(self, soup: BeautifulSoup) -> Decimal:
+    def _get_total(self) -> Decimal:
         # same as for Lenta
-        text = self._get_text(soup)
+        text = self._get_text()
         match = re.search(r"ИТОГО: (\d+(?:\.\d+)?)", text)
         if not match:
             return None
         return Decimal(match.group(1))
 
 
-    def _get_receipt_items(self, soup: BeautifulSoup) -> list[Item]:
+    def _get_receipt_items(self) -> list[Item]:
 
         products = []
 
-        for row in soup.find_all("tr"):
+        for row in self.soup.find_all("tr"):
             cells = row.find_all("td", recursive=False)
 
             if len(cells) != 4:
@@ -198,3 +191,92 @@ class MagnitParser(Parser):
 
         return products
 
+
+class VkusvillParser(Parser):
+    def _get_store_name(self) -> str:
+        return "Vkusvill"
+
+    def _get_total(self) -> Decimal | None:
+        #the same --> need to refactor (input total pattern )
+        text = self._get_text()
+
+        match = re.search(r"ИТОГ (\d+(?:\.\d+)?)", text)
+        if not match:
+            return None
+        return Decimal(match.group(1))
+
+    def _get_purchase_datetime(self) -> datetime:
+        text = self._get_text()
+        match = re.search(
+            r"ДАТА ВЫДАЧИ (\d{2}\.\d{2}\.\d{2}\s+\d{2}:\d{2})",
+            text,
+        )
+
+        if not match:
+            return None
+
+        return datetime.strptime(
+            match.group(1),
+            "%d.%m.%y %H:%M",
+        )
+
+    def _get_receipt_items(self) -> list[Item]:
+        products = []
+
+        # В чеке название товара находится внутри <b>.
+        for element in self.soup.find_all("b"):
+            name = element.get_text(" ", strip=True)
+
+            # Ищем строку таблицы, содержащую название и цены.
+            row = element.find_parent("tr")
+            if not row:
+                continue
+
+            row_text = row.get_text(" ", strip=True)
+
+            # В товарной строке цена указана в формате:
+            # количество X цена за единицу.
+            price_match = re.search(
+                r"(?<![\d.,])"
+                r"(\d+(?:[.,]\d+)?)\s*[xх×]\s*"
+                r"(\d+(?:[.,]\d+)?)",
+                row_text,
+                flags=re.IGNORECASE,
+            )
+
+            # Отсекаем заголовки и служебные элементы.
+            if not price_match:
+                continue
+
+            quantity = Decimal(price_match.group(1))
+            unit_price = Decimal(price_match.group(2))
+
+            total_match = re.search(
+                r"=\s*(\d+(?:[.,]\d+)?)",
+                row_text,
+            )
+
+            if total_match:
+                total = Decimal(
+                    total_match.group(1)
+                )
+            else:
+                total = quantity * unit_price
+
+            # Убираем служебную маркировку и единицу учета
+            # из конца названия, сохраняя остальные характеристики.
+            name = re.sub(r"^\[M\]\s*", "", name)
+            name = re.sub(
+                r"\s*,\s*шт\.?\s*$",
+                "",
+                name,
+                flags=re.IGNORECASE,
+            ).strip()
+
+
+            products.append(Item(name=name,
+                                 quantity=quantity,
+                                 unit_price=unit_price,
+                                 total=total))
+
+        return products
