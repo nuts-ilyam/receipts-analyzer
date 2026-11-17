@@ -25,7 +25,8 @@ CATEGORY_KEYWORDS = {
         "козинак",
         "бриошь",
         "мармел-айс",
-        "карамель"
+        "карамель",
+        "сырок"
     ],
     "Напитки": [
         "вода",
@@ -146,7 +147,8 @@ CATEGORY_KEYWORDS = {
     ],
     "Колбасные изделия": [
         "сосиски",
-        "сардельки"
+        "сардельки",
+        "ветчина"
     ],
     "Курица": [
         "филе",
@@ -175,7 +177,7 @@ CATEGORY_KEYWORDS = {
 }
 
 
-def find_category(product_name: str) -> str | None:
+def find_category_by_rules(product_name: str) -> str | None:
     name = product_name.casefold()
 
     for category, keywords in CATEGORY_KEYWORDS.items():
@@ -185,5 +187,3 @@ def find_category(product_name: str) -> str | None:
 
     return None
 
-
-#'premiere of taste форель сл/сол филе-кусок 20 '

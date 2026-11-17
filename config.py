@@ -1,10 +1,11 @@
 from typing import ContextManager
-
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from contextlib import contextmanager
 
+ENV_PATH = Path(__file__).resolve().parent / ".env"
 
 class DatabaseSettings(BaseSettings):
     db_host: str
@@ -12,7 +13,7 @@ class DatabaseSettings(BaseSettings):
     db_name: str
     db_user: str
     db_password: str
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=ENV_PATH, extra="ignore")
 
     @property
     def     database_url(self):
@@ -34,12 +35,19 @@ class IMAPSettings(BaseSettings):
     imap_password: str
     imap_folder: str = "INBOX"
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=ENV_PATH, extra="ignore")
+
+class LLMSettings(BaseSettings):
+    llm_api_key: str
+    llm_base_url: str
+    llm_model_name: str
+    model_config = SettingsConfigDict(env_file=ENV_PATH, extra="ignore")
 
 
 class Settings:
     db = DatabaseSettings()
     mail = IMAPSettings()
+    llm = LLMSettings()
 
 settings = Settings()
 
