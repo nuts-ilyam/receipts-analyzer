@@ -5,7 +5,8 @@ from imap_tools import MailMessage
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from category_detection import find_category
+from llm.product_matching import get_matched_product_id
+from rule_based_category_detection import find_category_by_rules
 from config import db_session
 from db.models import Receipts, ReceiptItem, Product
 from parser import LentaParser, MagnitParser, VkusvillParser
@@ -100,7 +101,7 @@ def run_email_processing(messages: List[MailMessage]):
 
         html = mes.html
 
-        parser_receipt = parser.get_parsed_receipt(html)
+        parser_receipt = parser.get_parsed_receipt()
         new_receipt = Receipts(purchase_date=parser_receipt.purchase_datetime,
                                raw_html=html,
                                store_name=parser_receipt.store,
@@ -126,19 +127,24 @@ def run_email_processing(messages: List[MailMessage]):
                     if norm_product_name in product_id_dict:
                         product_id = product_id_dict[norm_product_name]
                     else:
-                        new_product = Product(name=norm_product_name,
-                                              category=find_category(norm_product_name))
-                        db.add(new_product)
-                        db.commit()
-                        product_id = new_product.id
-                        product_id_dict[norm_product_name] = product_id
+                        product_id = get_matched_product_id(norm_product_name)
+                        if not product_id:
+
+                            new_product = Product(name=norm_product_name,
+                                                  category=find_category_by_rules(norm_product_name))
+                            db.add(new_product)
+                            db.commit()
+                            product_id = new_product.id
+                            product_id_dict[norm_product_name] = product_id
 
                     new_receipt_item = ReceiptItem(
                         raw_product_name=norm_product_name,
                         product_id=product_id,
                         quantity=product.quantity,
                         price=product.total,
-                        receipt_id=new_receipt.id)
+                        receipt_id=new_receipt.id,
+
+                    )
 
                     db.add(new_receipt_item)
                 db.commit()
