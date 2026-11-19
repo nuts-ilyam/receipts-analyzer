@@ -1,3 +1,8 @@
+from pathlib import Path
+
+MODEL_PATH = Path(__file__).resolve().parent / "models" / "product_classifier_lr.joblib"
+MIN_CONFIDENCE = 0.1
+
 CATEGORY_KEYWORDS = {
     "Молочные продукты": [
         "молоко",
@@ -26,7 +31,9 @@ CATEGORY_KEYWORDS = {
         "бриошь",
         "мармел-айс",
         "карамель",
-        "сырок"
+        "сырок",
+        "пирог",
+        "вафли"
     ],
     "Напитки": [
         "вода",
@@ -51,7 +58,8 @@ CATEGORY_KEYWORDS = {
         "чипсы",
         "кальмар beerka",
         "колбаски",
-        "сухарики"
+        "сухарики",
+        "желтый полосатик"
     ],
     "Крупы и масла": [
         "манка",
@@ -96,7 +104,8 @@ CATEGORY_KEYWORDS = {
         "картофель",
         "баклажаны",
         "руккола",
-        "радичио"
+        "радичио",
+        "помидоры"
     ],
     "Алкогольные напитки": [
         "пиво",
@@ -110,7 +119,9 @@ CATEGORY_KEYWORDS = {
         "оливки",
         "маслин",
         "ананас кольца",
-        "шпроты"
+        "шпроты",
+        "горошек",
+        "кукуруза ж/б"
     ],
     "Кулинария": [
         "антипасти",
@@ -175,15 +186,4 @@ CATEGORY_KEYWORDS = {
         "соль для ванн"
     ]
 }
-
-
-def find_category_by_rules(product_name: str) -> str | None:
-    name = product_name.casefold()
-
-    for category, keywords in CATEGORY_KEYWORDS.items():
-        for keyword in keywords:
-            if keyword.casefold() in name:
-                return category
-
-    return None
 
