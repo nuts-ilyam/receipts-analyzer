@@ -49,7 +49,7 @@ def get_matched_product_id(product_name: str)-> int|None:
             base_url=settings.llm.llm_base_url,
             api_key=settings.llm.llm_api_key,
         )
-
+#todo try-catch if response
         response = client.chat.completions.create(
             model=settings.llm.llm_model_name,
             response_format=response_format,
