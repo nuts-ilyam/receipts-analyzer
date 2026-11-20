@@ -2,6 +2,8 @@ from typing import List
 
 from imap_tools import MailBox, AND, MailMessage
 
+from logging_utils import time_logging
+
 
 class EmailClient:
     def __init__(self,
@@ -14,6 +16,7 @@ class EmailClient:
         self.password = password
         self.folder = folder
 
+    @time_logging()
     def get_unread_messages(self):
 
         with MailBox(self.host).login(
