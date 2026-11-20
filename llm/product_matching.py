@@ -49,7 +49,8 @@ def prepare_user_prompt(product_name: str, candidates: dict[int, str]) -> str:
 
 @time_logging("Requesting LLM")
 def request_llm(product_name: str, candidates: dict[int, str]) -> ChatCompletion | None:
-    logger.debug(f"Requesting the model {settings.llm.llm_model_name} at {settings.llm.base_url}.")
+    logger.debug(f"Requesting the model {settings.llm.llm_model_name} at {settings.llm.llm_base_url} for"
+                 f"product={product_name}.")
     client = OpenAI(
         base_url=settings.llm.llm_base_url,
         api_key=settings.llm.llm_api_key,

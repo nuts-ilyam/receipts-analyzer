@@ -5,6 +5,7 @@ import logging
 
 logger =  logging.getLogger(__name__)
 
+
 def init_logging(
         level: int = logging.INFO,
         log_file: str | None = None,
@@ -18,6 +19,7 @@ def init_logging(
         datefmt="%Y-%m-%d %H:%M:%S",
         handlers=handlers
     )
+    logging.getLogger("httpcore2").setLevel(logging.WARNING)
 
 
 
@@ -26,7 +28,6 @@ def time_logging(message: str | None = None):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             start = time.perf_counter()
-            logger.info(message)
             result = func(*args, **kwargs)
             elapsed  = time.perf_counter() - start
             if message:
