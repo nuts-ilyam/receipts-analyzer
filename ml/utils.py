@@ -1,6 +1,9 @@
+import logging
+
 from ml.category_classifier import ProductClassifier
 from ml.constants import CATEGORY_KEYWORDS, MODEL_PATH, MIN_CONFIDENCE
 
+logger = logging.getLogger(__name__)
 
 def get_category_by_rules(product_name: str) -> str | None:
     name = product_name.casefold()
@@ -33,6 +36,7 @@ def get_category(product_name: str) -> str|None:
     """
     cat_ml = get_category_by_lr_clf(product_name)
     cat_rule = get_category_by_rules(product_name)
+    logger.info(f"{product_name}: ML -> {cat_ml},Rules -> {cat_rule}")
     if (cat_ml == cat_rule) | (cat_rule is None):
         return cat_ml
     else:
