@@ -15,7 +15,6 @@ from logging_utils import time_logging
 
 logger = logging.getLogger(__name__)
 
-
 def get_llm_candidates(search_product_name: str) -> dict[int, str] | None:
     with db_session() as db:
         db.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm;"))
@@ -86,7 +85,7 @@ def get_matched_product_id(product_name: str) -> int | None:
     if not response or not response.choices:
         return None
 
-    content = json.loads(response.choices[0].message.content)
+    content = response.choices[0].message.content
     if not content:
         return None
 
