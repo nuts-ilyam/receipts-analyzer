@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from llm.product_matching import get_matched_product_id
-from ml.utils import get_category_by_rules
+from ml.utils import get_category
 from config import db_session
 from db.models import Receipts, ReceiptItem, Product
 from parser import LentaParser, MagnitParser, VkusvillParser
@@ -135,7 +135,7 @@ def run_email_processing(messages: List[MailMessage]):
                         if not product_id:
 
                             new_product = Product(name=norm_product_name,
-                                                  category=get_category_by_rules(norm_product_name))
+                                                  category=get_category(norm_product_name))
                             db.add(new_product)
                             db.commit()
                             product_id = new_product.id
