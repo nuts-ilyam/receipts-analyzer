@@ -1,7 +1,7 @@
 import re
 from dataclasses import dataclass
 from datetime import datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from bs4 import BeautifulSoup
 
 
@@ -248,7 +248,12 @@ class VkusvillParser(Parser):
             if not price_match:
                 continue
 
-            quantity = Decimal(price_match.group(1))
+ # need refactoring
+            quantity = price_match.group(1)
+            if "," in quantity:
+                quantity = quantity.replace(",", ".")
+
+            quantity = Decimal(quantity)
             unit_price = Decimal(price_match.group(2))
 
             total_match = re.search(
