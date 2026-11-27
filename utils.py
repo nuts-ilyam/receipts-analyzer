@@ -133,16 +133,18 @@ def run_email_processing(messages: List[MailMessage]):
                     else:
                         product_id = get_matched_product_id(norm_product_name)
                         if not product_id:
-
-                            new_product = Product(name=norm_product_name,
-                                                  category=get_category(norm_product_name))
+                            new_product = Product(
+                                name=norm_product_name,
+                                category=get_category(norm_product_name)
+                            )
                             db.add(new_product)
                             db.commit()
                             product_id = new_product.id
                             product_id_dict[norm_product_name] = product_id
 
                     new_receipt_item = ReceiptItem(
-                        raw_product_name=norm_product_name,
+                        raw_product_name=product.name,
+                        norm_product_name=norm_product_name,
                         product_id=product_id,
                         quantity=product.quantity,
                         price=product.total,
