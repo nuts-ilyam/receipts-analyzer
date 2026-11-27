@@ -1,4 +1,4 @@
-from sqlalchemy import MetaData, Column, Integer, String, DateTime, Float, Text, text, ForeignKey, func
+from sqlalchemy import MetaData, Column, Integer, String, DateTime, Float, Text, text, ForeignKey, func, Boolean
 from sqlalchemy.orm import declarative_base
 
 
@@ -31,6 +31,9 @@ class Product(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True)
     category = Column(String)
+    is_verified = Column(Boolean, server_default=text("false"))
+    created_at = Column(DateTime, server_default=func.now())
+
     # brand
 
 class ReceiptItem(Base):
@@ -39,6 +42,7 @@ class ReceiptItem(Base):
     product_id = Column(Integer, ForeignKey("products.id"))
     receipt_id = Column(Integer, ForeignKey("receipts.id"))
     raw_product_name = Column(String, nullable=False)
+    norm_product_name = Column(String, nullable=False)
     quantity = Column(Float, nullable=False)
     price = Column(Float, nullable=False)
     # unit_price
